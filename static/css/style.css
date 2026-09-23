@@ -726,7 +726,7 @@ body {
   .toolbar {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 14px;
   }
 
   .search-box {
@@ -734,15 +734,32 @@ body {
     flex: 1 1 100%;
   }
 
+  .search-input {
+    height: 48px;
+    font-size: 1rem;
+    border-radius: var(--radius-md);
+  }
+
   .filter-box {
     width: 100%;
     flex: 1 1 100%;
   }
 
+  .select-input {
+    height: 48px;
+    font-size: 1rem;
+    border-radius: var(--radius-md);
+  }
+
   .btn-create {
     width: 100%;
     flex: 1 1 100%;
-    height: 46px; /* крупная удобная зона нажатия на смартфоне */
+    height: 52px; /* Увеличенная высота для гармоничной полноширинной кнопки */
+    font-size: 1.0625rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    margin-top: 2px;
   }
 
   .projects-grid {
@@ -760,6 +777,8 @@ body {
 
   .modal-actions .btn {
     width: 100%;
+    height: 48px;
+    font-size: 1rem;
   }
 
   .toast {
