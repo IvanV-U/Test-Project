@@ -1,6 +1,14 @@
 import os
 from flask import Flask, render_template, request, jsonify
+from sqlalchemy import event, func
+from sqlalchemy.engine import Engine
 from models import db, Project
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_custom_functions(dbapi_connection, connection_record):
+    """Регистрация Python-функции нижнего регистра для корректного регистронезависимого поиска по кириллице в SQLite."""
+    if hasattr(dbapi_connection, "create_function"):
+        dbapi_connection.create_function("py_lower", 1, lambda val: str(val).lower() if val is not None else "")
 
 def create_app():
     app = Flask(__name__)
@@ -31,9 +39,11 @@ def create_app():
         query = Project.query
 
         if search_query:
-            wildcard = f"%{search_query}%"
+            q_lower = search_query.lower()
+            wildcard = f"%{q_lower}%"
             query = query.filter(
-                (Project.title.ilike(wildcard)) | (Project.description.ilike(wildcard))
+                (func.py_lower(Project.title).like(wildcard)) | 
+                (func.py_lower(Project.description).like(wildcard))
             )
 
         if status_filter and status_filter != "Все":
