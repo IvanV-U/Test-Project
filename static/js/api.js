@@ -42,7 +42,10 @@ const ProjectsAPI = (() => {
     }
   ];
 
-  let isLocalStorageMode = window.location.protocol === 'file:';
+  // Автоматическое определение режима:
+  // Если страница открыта локально (file:) или размещена на статическом хостинге (github.io),
+  // сразу работаем в режиме LocalStorage.
+  let isLocalStorageMode = window.location.protocol === 'file:' || window.location.hostname.includes('github.io');
 
   function getLocalProjects() {
     try {
@@ -63,6 +66,7 @@ const ProjectsAPI = (() => {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(projects));
     } catch (e) {
       console.error("Не удалось сохранить в localStorage:", e);
+      throw new Error("Хранилище браузера заблокировано или переполнено");
     }
   }
 
@@ -77,6 +81,9 @@ const ProjectsAPI = (() => {
           const response = await fetch(`/api/projects?${params.toString()}`);
           if (response.ok) {
             return await response.json();
+          } else {
+            console.warn(`API вернул статус ${response.status}, переключаемся в режим localStorage`);
+            isLocalStorageMode = true;
           }
         } catch (err) {
           console.warn("Бэкенд недоступен, переключаемся в режим localStorage:", err);
@@ -113,15 +120,24 @@ const ProjectsAPI = (() => {
 
           if (response.ok) {
             return await response.json();
-          } else {
+          }
+
+          // Если сервер вернул ошибку, проверяем, является ли ответ JSON
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
             const errData = await response.json();
             throw new Error(errData.error || 'Ошибка при сохранении проекта на сервере');
+          } else {
+            // Если ответ не JSON (например, 404 HTML страница от GitHub Pages),
+            // значит бэкенд на этом хосте отсутствует
+            console.warn(`Сервер вернул не-JSON ответ (${response.status}), переключаемся в localStorage`);
+            isLocalStorageMode = true;
           }
         } catch (err) {
-          if (err.message && !err.message.includes('fetch')) {
+          if (err.message && !err.message.includes('fetch') && !err.message.includes('JSON')) {
             throw err;
           }
-          console.warn("Сервер не ответил, сохраняем в localStorage:", err);
+          console.warn("Сервер не ответил или вернул не-JSON, сохраняем в localStorage:", err);
           isLocalStorageMode = true;
         }
       }
@@ -153,6 +169,8 @@ const ProjectsAPI = (() => {
           });
           if (response.ok) {
             return await response.json();
+          } else {
+            isLocalStorageMode = true;
           }
         } catch (err) {
           console.warn("Ошибка при удалении на сервере, удаляем из localStorage:", err);
